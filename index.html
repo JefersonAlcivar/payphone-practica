@@ -1,0 +1,238 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <title>Tienda Tecnológica</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background-color: #f4f6f8;
+            margin: 0;
+            padding: 0;
+        }
+
+        h1 {
+            text-align: center;
+            padding: 20px;
+            background-color: #0f172a;
+            color: white;
+            margin: 0;
+        }
+
+        .tienda {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 20px;
+            padding: 30px;
+        }
+
+        .producto {
+            background-color: white;
+            border-radius: 12px;
+            box-shadow: 0 6px 15px rgba(0,0,0,0.15);
+            padding: 15px;
+            text-align: center;
+        }
+
+        .producto img {
+            width: 100%;
+            height: 180px;
+            object-fit: cover;
+            border-radius: 8px;
+        }
+
+        .producto h3 {
+            margin: 12px 0 5px;
+        }
+
+        .precio {
+            font-size: 18px;
+            font-weight: bold;
+            color: #16a34a;
+        }
+
+        button {
+            margin-top: 12px;
+            background-color: #2563eb;
+            color: white;
+            border: none;
+            padding: 10px 16px;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 15px;
+        }
+
+        button:hover {
+            background-color: #1e40af;
+        }
+
+        /* Carrito flotante */
+        #carrito {
+            position: fixed;
+            top: 0;
+            right: 0;
+            width: 300px;
+            height: 100%;
+            background-color: #fff;
+            border-radius: 12px 0 0 12px;
+            box-shadow: -3px 0 15px rgba(0,0,0,0.2);
+            padding: 15px;
+            overflow-y: auto;
+            z-index: 1000;
+            transform: translateX(100%);
+            transition: transform 0.3s ease;
+        }
+
+        #carrito.abierto {
+            transform: translateX(0);
+        }
+
+        #toggle-carrito {
+            position: fixed;
+            top: 100px;
+            right: 0;
+            background-color: #2563eb;
+            color: white;
+            padding: 10px 15px;
+            border-radius: 8px 0 0 8px;
+            cursor: pointer;
+            z-index: 1001;
+        }
+
+        #carrito h3 {
+            margin-top: 0;
+            text-align: center;
+        }
+
+        .item-carrito {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 8px;
+        }
+
+        .item-carrito button {
+            background-color: #ef4444;
+            font-size: 12px;
+            padding: 4px 8px;
+            border-radius: 6px;
+        }
+
+        .item-carrito button:hover {
+            background-color: #b91c1c;
+        }
+
+        #total {
+            font-weight: bold;
+            margin-top: 10px;
+            text-align: right;
+        }
+
+        #checkout {
+            margin-top: 10px;
+            width: 100%;
+            background-color: #16a34a;
+        }
+
+        #checkout:hover {
+            background-color: #15803d;
+        }
+    </style>
+</head>
+<body>
+
+<h1>🖥️ Tienda Tecnológica</h1>
+
+<div class="tienda" id="productos">
+    <!-- Productos se generarán dinámicamente -->
+</div>
+
+<!-- Botón para abrir/cerrar carrito -->
+<div id="toggle-carrito">🛒 Carrito</div>
+
+<!-- Carrito desplegable -->
+<div id="carrito">
+    <h3>Carrito</h3>
+    <div id="items-carrito"></div>
+    <p id="total">Total: $0.00</p>
+    <form id="form-checkout" action="pagar.php" method="POST">
+        <input type="hidden" name="descripcion" id="descripcion-carrito">
+        <input type="hidden" name="monto" id="monto-carrito">
+        <button type="submit" id="checkout">Pagar con Payphone</button>
+    </form>
+</div>
+
+<script>
+    // Lista de productos, cambia la ruta a tus imágenes locales
+    const productos = [
+        { nombre: "Tarjeta Gráfica RTX 4060", precio: 120, imagen: "imagenes/gpu.jpg" },
+        { nombre: "Memoria RAM 16GB DDR4", precio: 45, imagen: "imagenes/ram.jpg" },
+        { nombre: "Disco SSD 1TB", precio: 80, imagen: "imagenes/ssd.jpg" },
+        { nombre: "Case Gamer RGB", precio: 60, imagen: "imagenes/case.jpg" }
+    ];
+
+    const tienda = document.getElementById("productos");
+    const itemsCarrito = document.getElementById("items-carrito");
+    const totalCarrito = document.getElementById("total");
+    const descripcionCarrito = document.getElementById("descripcion-carrito");
+    const montoCarrito = document.getElementById("monto-carrito");
+
+    let carrito = [];
+
+    function actualizarCarrito() {
+        itemsCarrito.innerHTML = "";
+        let total = 0;
+        carrito.forEach((item, index) => {
+            const div = document.createElement("div");
+            div.classList.add("item-carrito");
+            div.innerHTML = `
+                ${item.nombre} x${item.cantidad} - $${(item.precio * item.cantidad).toFixed(2)}
+                <button onclick="eliminarDelCarrito(${index})">Eliminar</button>
+            `;
+            itemsCarrito.appendChild(div);
+            total += item.precio * item.cantidad;
+        });
+        totalCarrito.textContent = `Total: $${total.toFixed(2)}`;
+        descripcionCarrito.value = carrito.map(i => `${i.nombre} x${i.cantidad}`).join(", ");
+        montoCarrito.value = (total * 100).toFixed(0); // centavos si Payphone lo requiere
+    }
+
+    function agregarAlCarrito(producto) {
+        const index = carrito.findIndex(p => p.nombre === producto.nombre);
+        if(index > -1){
+            carrito[index].cantidad++;
+        } else {
+            carrito.push({ ...producto, cantidad: 1 });
+        }
+        actualizarCarrito();
+    }
+
+    function eliminarDelCarrito(index) {
+        carrito.splice(index, 1);
+        actualizarCarrito();
+    }
+
+    // Renderizar productos
+    productos.forEach(producto => {
+        const div = document.createElement("div");
+        div.classList.add("producto");
+        div.innerHTML = `
+            <img src="${producto.imagen}" alt="${producto.nombre}">
+            <h3>${producto.nombre}</h3>
+            <p class="precio">$${producto.precio.toFixed(2)}</p>
+            <button>Agregar al carrito</button>
+        `;
+        div.querySelector("button").addEventListener("click", () => agregarAlCarrito(producto));
+        tienda.appendChild(div);
+    });
+
+    // Abrir/cerrar carrito
+    const carritoDiv = document.getElementById("carrito");
+    const toggleCarrito = document.getElementById("toggle-carrito");
+    toggleCarrito.addEventListener("click", () => {
+        carritoDiv.classList.toggle("abierto");
+    });
+</script>
+
+</body>
+</html>
