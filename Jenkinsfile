@@ -2,14 +2,14 @@ pipeline {
     agent any
 
     tools {
-        nodejs "Node22" // Configura una instalación de Node.js en Jenkins
-        dockerTool 'Dockertool'  // Cambia el nombre de la herramienta según tu configuración en Jenkins
+        nodejs "Node22"
+        dockerTool 'Dockertool'
     }
 
     stages {
+
         stage('Instalar dependencias') {
             steps {
-                sh 'chmod +x -R node_modules/.bin/'
                 sh 'npm install'
             }
         }
@@ -43,4 +43,3 @@ pipeline {
         }
     }
 }
- 
